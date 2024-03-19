@@ -2,19 +2,8 @@ import User from "../models/User.js";
 import Song from "../models/Song.js";
 import Auth from "../common/Auth.js"
 
-const getAllUsers = async(req,res)=>{
-    try {
-        let users = await User.find({password:0})
-        res.status(200).send({
-            message:"Data Fetch Successful",
-            users
-        })
-    } catch (error) {
-        res.status(500).send({
-            message: error.message || 'Internal Server Error'  
-        })
-    }
-}
+
+
 
 const create = async(req,res)=>{
     try {
@@ -44,6 +33,80 @@ const create = async(req,res)=>{
     }
 }
 
+const login = async(req,res)=>{
+    try {
+        //validate if the email and password are valid
+        let {email,password} = req.body
+        let user = await User.findOne({email:email})
+
+        if(user)
+        {
+            if(await Auth.hashCompare(password,user.password))
+            {
+                let token = await Auth.createToken({
+                    email,
+                    userId:user._id
+                })
+
+                res.status(200).send({
+                    message:"Login Successful",
+                    success:true,
+                    data:token
+                    
+                })
+            }
+            else
+            {
+                res.status(400).send({
+                    message:"Incorrect Password"
+                })
+            }
+        }
+        else
+        {
+            res.status(400).send({
+                message:"User Does Not Exists"
+            })
+        }
+    } catch (error) {
+        res.status(500).send({
+            message: error.message || 'Internal Server Error'  
+        })
+    }
+}
+
+const getUserById=async(req,res)=>{
+try {
+    const user=await User.findById(req.body.userId,{password:0})
+    res.status(200).send({
+        message:"User data fetched successfully",
+        success:true,
+        data:user
+    })
+} catch (error) {
+    res.status(500).send({
+        message: error.message || 'Internal Server Error'  
+    })
+}
+}
+
+
+const getAllUsers = async(req,res)=>{
+    try {
+        let users = await User.find({password:0})
+        res.status(200).send({
+            message:"User Data Fetch Successful",
+            data:users
+        })
+    } catch (error) {
+        res.status(500).send({
+            message: error.message || 'Internal Server Error'  
+        })
+    }
+}
+
+
+
 const deleteUser = async(req,res)=>{
     try {
         let userId = req.params.id
@@ -68,48 +131,7 @@ const deleteUser = async(req,res)=>{
     }
 }
 
-const login = async(req,res)=>{
-    try {
-        //validate if the email and password are valid
-        let {email,password} = req.body
-        let user = await User.findOne({email:email})
 
-        if(user)
-        {
-            if(await Auth.hashCompare(password,user.password))
-            {
-                let token = await Auth.createToken({
-                    email,
-                    role:user.role,
-                    id:user._id
-                })
-
-                res.status(200).send({
-                    message:"Login Successful",
-                    role:user.role,
-                    token,
-                    username:user.username
-                })
-            }
-            else
-            {
-                res.status(400).send({
-                    message:"Incorrect Password"
-                })
-            }
-        }
-        else
-        {
-            res.status(400).send({
-                message:"User Does Not Exists"
-            })
-        }
-    } catch (error) {
-        res.status(500).send({
-            message: error.message || 'Internal Server Error'  
-        })
-    }
-}
 
 const getUserFavoriteSongs = async (req, res) => {
     try {
@@ -140,8 +162,9 @@ const getUserFavoriteSongs = async (req, res) => {
 
 export default {
     create,
+    login,
+    getUserById,
     getAllUsers,
     deleteUser,
-    login,
     getUserFavoriteSongs
 }
